@@ -9,10 +9,10 @@
   <ItemGroup>
     <Folder Include="AutoMapper\" />
     <Folder Include="Common\" />
+    <Folder Include="Services\" />
     <Folder Include="Validators\" />
     <Folder Include="ServiceInterfaces\" />
     <Folder Include="RepositoryInterfaces\" />
-    <Folder Include="DTOs\" />
   </ItemGroup>
 
   <ItemGroup>
