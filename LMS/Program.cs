@@ -1,5 +1,9 @@
+using FluentValidation;
+using LMS.Application.RepositoryInterfaces;
+using LMS.Application.Validators;
 using LMS.Infrastructure;
 using LMS.Infrastructure.Identity;
+using LMS.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -104,6 +108,13 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<LoginDtoValidator>();
+
 
 var app = builder.Build();
 
