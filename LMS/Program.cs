@@ -1,14 +1,19 @@
 using FluentValidation;
+using LMS.API.Middleware;
 using LMS.Application.RepositoryInterfaces;
+using LMS.Application.ServiceInterfaces;
 using LMS.Application.Validators;
 using LMS.Infrastructure;
 using LMS.Infrastructure.Identity;
+using LMS.Infrastructure.Interfaces;
 using LMS.Infrastructure.Repositories;
+using LMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Diagnostics;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,6 +40,8 @@ var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"];
 
 
+
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString,
         b => b.MigrationsAssembly("LMS.Infrastructure"))
@@ -50,6 +57,9 @@ builder.Services.AddAuthentication(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
+       
+
+
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
@@ -111,12 +121,19 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<LoginDtoValidator>();
+
 
 
 var app = builder.Build();
+
+
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 
 if (app.Environment.IsDevelopment())
@@ -128,8 +145,88 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+
+
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var configuration = services.GetRequiredService<IConfiguration>();
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+        var adminEmail = configuration["AdminUser:Email"];
+        var adminPassword = configuration["AdminUser:Password"];
+        var adminUserName = configuration["AdminUser:UserName"];
+        var adminFirstName = configuration["AdminUser:FirstName"];
+        var adminLastName = configuration["AdminUser:LastName"];
+
+        await SeedDefaultRolesAndAdmin(
+            userManager,
+            roleManager,
+            adminEmail,
+            adminPassword,
+            adminUserName,
+            adminFirstName,
+            adminLastName
+        );
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the database.");
+    }
+
+    
+}
+
+
+static async Task SeedDefaultRolesAndAdmin(
+    UserManager<ApplicationUser> userManager,
+    RoleManager<IdentityRole> roleManager,
+    string adminEmail,
+    string adminPassword,
+    string adminUserName,
+    string adminFirstName,
+    string adminLastName)
+{
+    string[] roles = { "Admin", "User" };
+
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+        {
+            await roleManager.CreateAsync(new IdentityRole(role));
+        }
+    }
+
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+    if (adminUser == null)
+    {
+        adminUser = new ApplicationUser
+        {
+            UserName = adminUserName,
+            Email = adminEmail,
+            FirstName = adminFirstName,
+            LastName = adminLastName,
+            EmailConfirmed = true
+        };
+
+        var result = await userManager.CreateAsync(adminUser, adminPassword);
+
+        if (result.Succeeded)
+        {
+            await userManager.AddToRoleAsync(adminUser, "Admin");
+        }
+    }
+}
+
 app.Run();

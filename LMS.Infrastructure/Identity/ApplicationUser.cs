@@ -12,9 +12,11 @@ namespace LMS.Infrastructure.Identity
     
         public  class ApplicationUser : IdentityUser
         {
-            public string? FirstName { get; set; }
-            public string? LastName { get; set; }
-            public DateTime? DateOfBirth { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+
+        public string FullName => $"{FirstName} {LastName}".Trim();
+        public DateTime? DateOfBirth { get; set; }
             public string? ProfilePictureUrl { get; set; }
             public DateTime CreatedAt
             {
