@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen, Mail, Lock, Eye, EyeOff, User } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
 import type { AuthResponse } from "@/lib/types"
+import { useAuth } from "@/components/contexts/auth-context"
+import { useToast } from "@/hooks/use-toast"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 
@@ -25,6 +26,7 @@ interface RegisterDTO {
 
 export function RegisterForm() {
   const { login } = useAuth()
+  const { toast } = useToast()
   const [formData, setFormData] = useState<RegisterDTO>({
     firstName: "",
     lastName: "",
@@ -48,7 +50,13 @@ export function RegisterForm() {
     e.preventDefault()
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
+      const errorMsg = "Passwords do not match"
+      setError(errorMsg)
+      toast({
+        title: "Validation Error",
+        description: errorMsg,
+        variant: "destructive",
+      })
       return
     }
 
@@ -56,7 +64,11 @@ export function RegisterForm() {
     setError("")
 
     try {
-      // Register the user
+      if (!API_BASE_URL) {
+        throw new Error("API base URL is not configured.")
+      }
+
+      
       const registerResponse = await fetch(`${API_BASE_URL}/Auth/register`, {
         method: "POST",
         headers: {
@@ -72,12 +84,26 @@ export function RegisterForm() {
         }),
       })
 
-      const registerData = await registerResponse.json()
-
-      if (!registerResponse.ok || !registerData.success) {
-        throw new Error(registerData.message || "Registration failed")
+      let errorMessage = "Registration failed"
+      
+      if (!registerResponse.ok) {
+        try {
+          const errorData = await registerResponse.json()
+          errorMessage = errorData.message || errorData.error || `Server error: ${registerResponse.status} ${registerResponse.statusText}`
+        } catch {
+          errorMessage = `Network error: ${registerResponse.status} ${registerResponse.statusText}`
+        }
+        throw new Error(errorMessage)
       }
 
+      const registerData = await registerResponse.json()
+
+      if (!registerData.success) {
+        errorMessage = registerData.message || "Registration failed"
+        throw new Error(errorMessage)
+      }
+
+     
       const loginResponse = await fetch(`${API_BASE_URL}/Auth/login`, {
         method: "POST",
         headers: {
@@ -89,15 +115,41 @@ export function RegisterForm() {
         }),
       })
 
+      if (!loginResponse.ok) {
+        try {
+          const errorData = await loginResponse.json()
+          errorMessage = errorData.message || errorData.error || `Auto-login failed: ${loginResponse.status} ${loginResponse.statusText}`
+        } catch {
+          errorMessage = `Auto-login failed: ${loginResponse.status} ${loginResponse.statusText}`
+        }
+        throw new Error(errorMessage)
+      }
+
       const loginData: AuthResponse = await loginResponse.json()
 
-      if (!loginResponse.ok || !loginData.success) {
-        throw new Error(loginData.message || "Auto-login failed")
+      if (!loginData.success) {
+        errorMessage = loginData.message || "Auto-login failed"
+        throw new Error(errorMessage)
       }
 
       login(loginData.data)
+      toast({
+        title: "Success",
+        description: "Account created successfully! You have been logged in.",
+      })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred during registration")
+      const errorMsg = err instanceof Error 
+        ? err.message 
+        : err instanceof TypeError && err.message === "Failed to fetch"
+          ? "Unable to connect to the server. Please check your internet connection"
+          : "An error occurred during registration."
+      
+      setError(errorMsg)
+      toast({
+        title: "Registration Failed",
+        description: errorMsg,
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -123,7 +175,6 @@ export function RegisterForm() {
                 id="firstName"
                 name="firstName"
                 type="text"
-                placeholder="John"
                 value={formData.firstName}
                 onChange={handleChange}
                 className="h-11 bg-background"
@@ -138,7 +189,6 @@ export function RegisterForm() {
                 id="lastName"
                 name="lastName"
                 type="text"
-                placeholder="Doe"
                 value={formData.lastName}
                 onChange={handleChange}
                 className="h-11 bg-background"
@@ -156,7 +206,6 @@ export function RegisterForm() {
                 id="userName"
                 name="userName"
                 type="text"
-                placeholder="johndoe"
                 value={formData.userName}
                 onChange={handleChange}
                 className="pl-10 h-11 bg-background"
@@ -174,7 +223,6 @@ export function RegisterForm() {
                 id="email"
                 name="email"
                 type="email"
-                placeholder="john@example.com"
                 value={formData.email}
                 onChange={handleChange}
                 className="pl-10 h-11 bg-background"
