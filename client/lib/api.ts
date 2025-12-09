@@ -1,4 +1,4 @@
-import type { Book, CreateBookDTO, UpdateBookDTO } from "./types"
+import type { Book, CreateBookDTO, UpdateBookDTO, UserProfile, UpdateProfileDTO, ChangePasswordDTO, DeleteAccountDTO } from "./types"
 import { getAccessToken, tryRefreshToken } from "./token-manager"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7112/api"
@@ -139,3 +139,64 @@ export async function deleteBook(id: number): Promise<void> {
 }
 
 
+export async function getProfile(): Promise<UserProfile> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/User/profile`, {
+    method: "GET",
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to fetch profile")
+  }
+
+  const data = await response.json()
+  return data.data || data
+}
+
+export async function updateProfile(data: UpdateProfileDTO): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/User/profile`, {
+    method: "PUT",
+    body: JSON.stringify({
+      FirstName: data.firstName,
+      LastName: data.lastName,
+      Email: data.email,
+      PhoneNumber: data.phoneNumber,
+      DateOfBirth: data.dateOfBirth,
+    }),
+  })
+
+    if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to update profile")
+  }
+}
+
+export async function changePassword(data: ChangePasswordDTO): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/User/change-password`, {
+    method: "POST",
+    body: JSON.stringify({
+      CurrentPassword: data.currentPassword,
+      NewPassword: data.newPassword,
+      ConfirmNewPassword: data.confirmNewPassword,
+    }),
+  })
+
+   if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to change password")
+  }
+}
+
+export async function deleteAccount(data: DeleteAccountDTO): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/User/account`, {
+    method: "DELETE",
+    body: JSON.stringify({
+      Password: data.password,
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to delete account")
+  }
+}

@@ -75,3 +75,36 @@ export interface UpdateBookDTO {
   rating?: number
   coverImageUrl?: string
 }
+
+export interface UserProfile {
+  userId: string
+  userName: string
+  email: string
+  firstName: string
+  lastName: string
+  fullName: string
+  phoneNumber?: string | null
+  dateOfBirth?: string | null
+  profilePictureUrl?: string | null
+  createdAt: string
+  role: "User" | "Admin"
+  totalBooks: number
+}
+
+export interface UpdateProfileDTO {
+  firstName?: string
+  lastName?: string
+  email?: string
+  phoneNumber?: string
+  dateOfBirth?: string
+}
+
+export interface ChangePasswordDTO {
+  currentPassword: string
+  newPassword: string
+  confirmNewPassword: string
+}
+
+export interface DeleteAccountDTO {
+  password: string
+}

@@ -20,6 +20,7 @@ interface AuthContextType {
   login: (authData: AuthResponse["data"]) => void
   logout: () => void
   getValidToken: () => Promise<string | null>
+   updateUser: (data: Partial<User>) => void 
 }
 
 
@@ -105,6 +106,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const updateUser = (updated: Partial<User>) => {
+  setUser((prev) => {
+    if (!prev) return prev
+    const newUser = { ...prev, ...updated }
+    localStorage.setItem("authUser", JSON.stringify(newUser))
+    return newUser
+  })
+}
+
   const getValidToken = useCallback(async (): Promise<string | null> => {
     const currentToken = getAccessToken()
 
@@ -132,10 +142,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     getValidToken,
+    updateUser
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
+
+
 
 export function useAuth() {
   const context = useContext(AuthContext)
