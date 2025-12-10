@@ -108,3 +108,30 @@ export interface ChangePasswordDTO {
 export interface DeleteAccountDTO {
   password: string
 }
+
+
+export interface AdminUser {
+  userId: string
+  userName: string
+  email: string
+  firstName: string
+  lastName: string
+  fullName: string
+  phoneNumber?: string | null
+  dateOfBirth?: string | null
+  profilePictureUrl?: string | null
+  createdAt: string
+  role: "User" | "Admin"
+  totalBooks: number
+}
+
+export interface UpdateRoleDTO {
+  role: "User" | "Admin"
+}
+
+export interface AdminBook extends Book {
+  userId?: string
+  userName?: string
+  ownerName?: string
+}
+

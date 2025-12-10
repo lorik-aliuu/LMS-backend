@@ -1,4 +1,4 @@
-import type { Book, CreateBookDTO, UpdateBookDTO, UserProfile, UpdateProfileDTO, ChangePasswordDTO, DeleteAccountDTO } from "./types"
+import type { Book, CreateBookDTO, UpdateBookDTO, UserProfile, UpdateProfileDTO, ChangePasswordDTO, DeleteAccountDTO, AdminUser, AdminBook, UpdateRoleDTO } from "./types"
 import { getAccessToken, tryRefreshToken } from "./token-manager"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7112/api"
@@ -199,4 +199,109 @@ export async function deleteAccount(data: DeleteAccountDTO): Promise<void> {
     const error = await response.json().catch(() => ({}))
     throw new Error(error.message || "Failed to delete account")
   }
+}
+
+export async function getAllUsers(): Promise<AdminUser[]> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/User`, {
+    method: "GET",
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to fetch users")
+  }
+
+  const data = await response.json()
+  return data.data || data
+}
+
+export async function getUserById(userId: string): Promise<AdminUser> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/User/${userId}`, {
+    method: "GET",
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to fetch user")
+  }
+
+  const data = await response.json()
+  return data.data || data
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/User/${userId}`, {
+    method: "DELETE",
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to delete user")
+  }
+}
+
+export async function updateUserRole(userId: string, role: UpdateRoleDTO): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/User/${userId}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ Role: role.role }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to update user role")
+  }
+}
+
+
+export async function getAllBooksAdmin(): Promise<AdminBook[]> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/Book/admin/all`, {
+    method: "GET",
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to fetch all books")
+  }
+
+  const data = await response.json()
+  return data.data || data
+}
+
+export async function getBookByIdAdmin(id: number): Promise<AdminBook> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/Book/admin/${id}`, {
+    method: "GET",
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to fetch book")
+  }
+
+  const data = await response.json()
+  return data.data || data
+}
+
+export async function deleteBookAdmin(id: number): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/Book/admin/${id}`, {
+    method: "DELETE",
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to delete book")
+  }
+}
+
+export async function getTotalBooksCount(): Promise<number> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/Book/admin/count`, {
+    method: "GET",
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.message || "Failed to fetch books count")
+  }
+
+  const data = await response.json()
+  return data.totalBooks || 0
 }
