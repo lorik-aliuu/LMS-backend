@@ -29,10 +29,17 @@ export interface RefreshTokenResponse {
   success: boolean
   message: string
   statusCode?: number
-  data?: {
+  data: {
     token: string
     refreshToken: string
     expiresAt: string
+    userId: string
+    userName: string
+    email: string
+    role: "User" | "Admin"
+    firstName: string
+    lastName: string
+    fullName: string
   }
 }
 
@@ -85,7 +92,6 @@ export interface UserProfile {
   fullName: string
   phoneNumber?: string | null
   dateOfBirth?: string | null
-  profilePictureUrl?: string | null
   createdAt: string
   role: "User" | "Admin"
   totalBooks: number
@@ -119,7 +125,6 @@ export interface AdminUser {
   fullName: string
   phoneNumber?: string | null
   dateOfBirth?: string | null
-  profilePictureUrl?: string | null
   createdAt: string
   role: "User" | "Admin"
   totalBooks: number

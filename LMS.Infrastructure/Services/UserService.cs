@@ -5,9 +5,11 @@ using LMS.Application.ServiceInterfaces;
 using LMS.Domain.Exceptions;
 using LMS.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,16 +21,24 @@ namespace LMS.Infrastructure.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IBookRepository _bookRepository;
         private readonly IMapper _mapper;
+        private readonly IUserNotifierService _userNotifier;
+
 
         public UserService(
             UserManager<ApplicationUser> userManager,
             IBookRepository bookRepository,
-            IMapper mapper)
+            IMapper mapper,
+            IUserNotifierService userNotifier
+           )
         {
             _userManager = userManager;
             _bookRepository = bookRepository;
             _mapper = mapper;
+            _userNotifier = userNotifier;
+
+
         }
+
    
 
     public async Task<UserProfileDTO> GetUserProfileAsync(string userId)
@@ -74,7 +84,7 @@ namespace LMS.Infrastructure.Services
             user.LastName = updateDto.LastName;
             user.PhoneNumber = updateDto.PhoneNumber;
             user.DateOfBirth = updateDto.DateOfBirth;
-            user.ProfilePictureUrl = updateDto.ProfilePictureUrl;
+           
 
             var result = await _userManager.UpdateAsync(user);
 
@@ -83,6 +93,8 @@ namespace LMS.Infrastructure.Services
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
                 throw new ValidationException($"Profile update failed: {errors}");
             }
+
+           
 
             return await GetUserProfileAsync(userId);
         }
@@ -141,6 +153,8 @@ namespace LMS.Infrastructure.Services
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
                 throw new ValidationException($"Account deletion failed: {errors}");
             }
+
+            await _userNotifier.NotifyAccountDeletedAsync(userId);
 
             return true;
         }
@@ -205,6 +219,8 @@ namespace LMS.Infrastructure.Services
                 throw new ValidationException($"User deletion failed: {errors}");
             }
 
+            await _userNotifier.NotifyAccountDeletedAsync(userId);
+
             return true;
         }
 
@@ -217,7 +233,6 @@ namespace LMS.Infrastructure.Services
                 throw new NotFoundException("User", userId);
             }
 
-           
             if (role != "User" && role != "Admin")
             {
                 throw new ValidationException("Invalid role. Must be 'User' or 'Admin'");
@@ -226,7 +241,6 @@ namespace LMS.Infrastructure.Services
             var currentRoles = await _userManager.GetRolesAsync(user);
             await _userManager.RemoveFromRolesAsync(user, currentRoles);
 
-            
             var result = await _userManager.AddToRoleAsync(user, role);
 
             if (!result.Succeeded)
@@ -234,6 +248,10 @@ namespace LMS.Infrastructure.Services
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
                 throw new ValidationException($"Role update failed: {errors}");
             }
+
+           
+            await _userManager.UpdateSecurityStampAsync(user);
+            await _userNotifier.NotifyUserRoleChangedAsync(userId, role);
 
             return true;
         }

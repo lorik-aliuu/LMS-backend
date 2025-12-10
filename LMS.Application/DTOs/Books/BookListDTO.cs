@@ -17,7 +17,9 @@ namespace LMS.Application.DTOs.Books
             public decimal Price { get; set; }
             public ReadingStatus ReadingStatus { get; set; }
             public int? Rating { get; set; }             
-            public string? CoverImageUrl { get; set; }   
-        }
+            public string? CoverImageUrl { get; set; }
+
+  
+    }
     
 }

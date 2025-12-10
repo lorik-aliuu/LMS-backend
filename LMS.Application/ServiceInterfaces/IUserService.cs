@@ -18,5 +18,6 @@ namespace LMS.Application.ServiceInterfaces
         Task<UserProfileDTO> GetUserByIdAsync(string userId);
         Task<bool> DeleteUserAsync(string userId);
         Task<bool> UpdateUserRoleAsync(string userId, string role);
+
     }
 }

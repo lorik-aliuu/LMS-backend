@@ -49,9 +49,7 @@ export function BooksTab({ books, onRefresh }: BooksTabProps) {
     (book) =>
       book.title.toLowerCase().includes(search.toLowerCase()) ||
       book.author.toLowerCase().includes(search.toLowerCase()) ||
-      book.genre.toLowerCase().includes(search.toLowerCase()) ||
-      book.ownerName?.toLowerCase().includes(search.toLowerCase()) ||
-      book.userName?.toLowerCase().includes(search.toLowerCase()),
+      book.genre.toLowerCase().includes(search.toLowerCase()),
   )
 
   const handleDeleteBook = async () => {
@@ -83,7 +81,7 @@ export function BooksTab({ books, onRefresh }: BooksTabProps) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search books by title, author, genre, or owner..."
+            placeholder="Search books by title, author, or genre..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -104,14 +102,13 @@ export function BooksTab({ books, onRefresh }: BooksTabProps) {
                 <TableHead>Genre</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Rating</TableHead>
-                <TableHead>Owner</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredBooks.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No books found.
                   </TableCell>
                 </TableRow>
@@ -155,9 +152,6 @@ export function BooksTab({ books, onRefresh }: BooksTabProps) {
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {book.ownerName || book.userName || "Unknown"}
-                    </TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
@@ -179,7 +173,6 @@ export function BooksTab({ books, onRefresh }: BooksTabProps) {
         </CardContent>
       </Card>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

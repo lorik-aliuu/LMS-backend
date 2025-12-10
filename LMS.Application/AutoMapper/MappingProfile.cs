@@ -29,7 +29,14 @@
                .ForMember(b => b.IsDeleted, opt => opt.Ignore());
 
 
+
             CreateMap<Book, BookListDTO>();
+             
+               
+
+          
+
+           
 
         }
 

@@ -10,13 +10,14 @@ import { OverviewTab } from "@/components/admin/overview-tab"
 import { UsersTab } from "@/components/admin/users-tab"
 import { BooksTab } from "@/components/admin/books-tab"
 import { getAllUsers, getAllBooksAdmin, getTotalBooksCount } from "@/lib/api"
+// Removed getAccessToken because the manual token check is removed
 import type { AdminUser, AdminBook } from "@/lib/types"
 import { Loader2 } from "lucide-react"
 
 type Tab = "overview" | "users" | "books"
 
 export default function AdminDashboard() {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth() // Added 'logout'
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>("overview")
   const [users, setUsers] = useState<AdminUser[]>([])
@@ -27,10 +28,18 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push("/login")
-    } else if (!authLoading && user?.role !== "Admin") {
-      router.push("/dashboard")
+      return
     }
-  }, [isAuthenticated, authLoading, user, router])
+    
+    if (!authLoading && user?.role !== "Admin") {
+      
+      router.push("/dashboard")
+      return
+    }
+    
+    
+
+  }, [isAuthenticated, authLoading, user, router]) 
 
   const fetchData = async () => {
     setLoading(true)
@@ -45,6 +54,7 @@ export default function AdminDashboard() {
       setTotalBooksCount(countData)
     } catch (error) {
       console.error("Failed to fetch admin data:", error)
+      
     } finally {
       setLoading(false)
     }

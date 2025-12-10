@@ -1,7 +1,7 @@
 import type { Book, CreateBookDTO, UpdateBookDTO, UserProfile, UpdateProfileDTO, ChangePasswordDTO, DeleteAccountDTO, AdminUser, AdminBook, UpdateRoleDTO } from "./types"
 import { getAccessToken, tryRefreshToken } from "./token-manager"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7112/api"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5298/api"
 
 function getAuthHeaders(): HeadersInit {
   const token = getAccessToken()
@@ -32,6 +32,8 @@ async function authenticatedFetch(url: string, options: RequestInit = {}): Promi
       })
     }
   }
+
+   
 
   return response
 }
@@ -248,7 +250,9 @@ export async function updateUserRole(userId: string, role: UpdateRoleDTO): Promi
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
-    throw new Error(error.message || "Failed to update user role")
+    const errorMessage = error.message || `Failed to update user role (${response.status})`
+    console.error("❌ Role update failed:", errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
