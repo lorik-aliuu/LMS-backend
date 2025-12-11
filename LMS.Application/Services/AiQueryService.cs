@@ -72,7 +72,7 @@
                     return new AiQueryResponseDTO
                     {
                         Success = false,
-                        ErrorMessage = "I'm sorry, I couldn't process your query. Please try rephrasing it.",
+                        ErrorMessage = "I'm sorry, I couldnt process your query. Please try rephrasing it.",
                         Answer = "An error occurred while processing your request."
                     };
                 }
@@ -92,11 +92,11 @@
                         PropertyNameCaseInsensitive = true
                     });
 
-                    return intent ?? throw new ValidationException("Could not parse AI response");
+                    return intent ?? throw new ValidationException("Couldnt parse");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error parsing AI response: {Response}", aiResponse);
+                    _logger.LogError(ex, "Error parsing  : {Response}", aiResponse);
                     throw new ValidationException("Could not understand the query");
                 }
             }
@@ -111,6 +111,9 @@
                     "BOOKS_BY_GENRE" => await GetBooksByGenreAsync(intent.Parameters?.Genre ?? "", userId, isAdmin),
                     "BOOKS_BY_STATUS" => await GetBooksByStatusAsync(intent.Parameters?.Status ?? "", userId, isAdmin),
                     "USER_STATISTICS" => await GetUserStatisticsAsync(userId, isAdmin),
+                    "MY_BOOK_COUNT" => await GetBookCountForUserAsync(userId),
+                    "CURRENTLY_READING" => await GetCurrentlyReadingBooksAsync(userId, isAdmin),
+                    "COMMON_GENRE" => await GetMostCommonGenreAsync(userId, isAdmin),
                     "GENERAL_STATISTICS" => await GetGeneralStatisticsAsync(isAdmin),
                     _ => throw new ValidationException("Query type not supported")
                 };
@@ -134,10 +137,10 @@
                     var user = await _userService.GetUserByIdAsync(g.Key);
                     userGroups.Add(new Dictionary<string, object>
                     {
-                        ["userId"] = g.Key,
+                     
                         ["userName"] = user?.UserName ?? "Unknown",
                         ["bookCount"] = g.Count()
-                    });
+                    }); 
                 }
 
                 return new QueryResult
@@ -225,7 +228,44 @@
                 };
             }
 
-                private async Task<QueryResult> GetBooksByStatusAsync(string status, string userId, bool isAdmin)
+        private async Task<QueryResult> GetMostCommonGenreAsync(string userId, bool isAdmin)
+        {
+            var books = isAdmin
+                ? await _bookRepository.GetAllBooksForAdminAsync()
+                : await _bookRepository.GetBooksByUserIdAsync(userId);
+
+            if (!books.Any())
+            {
+                return new QueryResult
+                {
+                    Data = new List<Dictionary<string, object>>(),
+                    ChartType = "single"
+                };
+            }
+
+            var mostCommonGenre = books
+                .GroupBy(b => b.Genre)
+                .OrderByDescending(g => g.Count())
+                .First().Key;
+
+            var result = new List<Dictionary<string, object>>
+    {
+        new()
+        {
+            ["metric"] = "Most Common Genre",
+            ["value"] = mostCommonGenre
+        }
+    };
+
+            return new QueryResult
+            {
+                Data = result,
+                ChartType = "single"
+            };
+        }
+
+
+        private async Task<QueryResult> GetBooksByStatusAsync(string status, string userId, bool isAdmin)
                 {
                     if (!Enum.TryParse<ReadingStatus>(status, true, out var readingStatus))
                     {
@@ -309,7 +349,50 @@
                 };
             }
 
-            private class QueryIntent
+        private async Task<QueryResult> GetCurrentlyReadingBooksAsync(string userId, bool isAdmin)
+        {
+            var books = isAdmin
+                ? (await _bookRepository.GetAllBooksForAdminAsync())
+                    .Where(b => b.ReadingStatus == ReadingStatus.Completed)
+                : await _bookRepository.GetBooksByStatusAsync(userId, ReadingStatus.Completed);
+
+            var bookList = books.Select(b => new Dictionary<string, object>
+            {
+                ["title"] = b.Title,
+                ["author"] = b.Author,
+                ["genre"] = b.Genre,
+                ["status"] = b.ReadingStatus.ToString()
+            }).ToList();
+
+            return new QueryResult
+            {
+                Data = bookList,
+                ChartType = "table"
+            };
+        }
+
+
+        private async Task<QueryResult> GetBookCountForUserAsync(string userId)
+        {
+            var count = await _bookRepository.GetBookCountByUserAsync(userId);
+
+            var result = new List<Dictionary<string, object>>
+    {
+        new()
+        {
+            ["metric"] = "Total Books",
+            ["value"] = count
+        }
+    };
+
+            return new QueryResult
+            {
+                Data = result,
+                ChartType = "single" 
+            };
+        }
+
+        private class QueryIntent
             {
                 public string QueryType { get; set; } = string.Empty;
                 public QueryParameters? Parameters { get; set; }

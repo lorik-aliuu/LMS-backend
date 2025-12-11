@@ -37,7 +37,7 @@ namespace LMS.API.Controllers
                 return BadRequest(new
                 {
                     success = false,
-                    message = "Query cannot be empty"
+                    message = "Query cant be empty"
                 });
             }
 

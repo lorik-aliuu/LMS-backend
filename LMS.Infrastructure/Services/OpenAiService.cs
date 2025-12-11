@@ -20,7 +20,7 @@ namespace LMS.Infrastructure.Services
             var apiKey = configuration.GetValue<string>("OpenAI:ApiKey")
                 ?? throw new InvalidOperationException("OpenAI API key not found");
 
-            var model = configuration.GetValue<string>("OpenAI:Model") ?? "gpt-4o-mini";
+            var model = configuration.GetValue<string>("OpenAI:Model");
 
             _chatClient = new ChatClient(model, new ApiKeyCredential(apiKey));
             _logger = logger;
@@ -41,7 +41,10 @@ Available query types:
 5. BOOKS_BY_GENRE - Find books by genre
 6. BOOKS_BY_STATUS - Find books by reading status
 7. USER_STATISTICS - Get statistics for a user
-8. GENERAL_STATISTICS - Get overall library statistics
+8.MY_BOOK_COUNT - Get total books of the user
+9. CURRENTLY_READING - Get books currently being read by the user
+10.COMMON_GENRE - Find the most common genre of the user's books
+10. GENERAL_STATISTICS - Get overall library statistics
 
 Respond ONLY with valid JSON in this format:
 {
@@ -85,7 +88,10 @@ Analyze this query and return the appropriate JSON response.";
             {
                 var systemPrompt = @"You are a helpful assistant that generates human-readable answers from data.
 Given a user's question and the retrieved data, create a clear, concise answer.
-Keep the answer brief and natural, like you're talking to a friend.";
+Keep the answer brief and natural, like you're talking to a friend.
+Do NOT use any Markdown formatting. 
+Do NOT use **bold**, *italic*, lists, bullet points, or symbols.
+Respond ONLY with plain text sentences.";
 
                 var userPrompt = $@"User asked: {query}
 

@@ -1,20 +1,20 @@
-    using AutoMapper;
-    using FluentValidation;
-    using FluentValidation.AspNetCore;
-    using LMS.API.Middleware;
-    using LMS.Application.AutoMapper;
-    using LMS.Application.RepositoryInterfaces;
-    using LMS.Application.ServiceInterfaces;
-    using LMS.Application.Services;
-    using LMS.Application.Validators;
-    using LMS.Infrastructure;
-    using LMS.Infrastructure.Hubs;
-    using LMS.Infrastructure.Identity;
-    using LMS.Infrastructure.Interfaces;
-    using LMS.Infrastructure.Repositories;
-    using LMS.Infrastructure.Services;
-    using Microsoft.AspNetCore.Authentication.JwtBearer;
-    using Microsoft.AspNetCore.Identity;
+ using AutoMapper;
+ using FluentValidation;
+ using FluentValidation.AspNetCore;
+ using LMS.API.Middleware;
+ using LMS.Application.AutoMapper;
+ using LMS.Application.RepositoryInterfaces;
+ using LMS.Application.ServiceInterfaces;
+ using LMS.Application.Services;
+ using LMS.Application.Validators;
+ using LMS.Infrastructure;
+ using LMS.Infrastructure.Hubs;
+ using LMS.Infrastructure.Identity;
+ using LMS.Infrastructure.Interfaces;
+ using LMS.Infrastructure.Repositories;
+ using LMS.Infrastructure.Services;
+ using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.DependencyInjection;
@@ -298,7 +298,5 @@ using (var scope = app.Services.CreateScope())
             }
         }
     }
-
-
-        app.Run();
+app.Run();
 
