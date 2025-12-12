@@ -17,26 +17,55 @@
             private readonly IBookRepository _bookRepository;
             private readonly IOpenAiService _openAIService;
             private readonly ILogger<AiQueryService> _logger;
-            private readonly IUserService _userService;
+        private readonly ICacheService _cacheService;
+        private readonly IUserService _userService;
+
+        private const int RATE_LIMIT_MAX_CALLS = 4; 
+        private static readonly TimeSpan RATE_LIMIT_WINDOW = TimeSpan.FromMinutes(1);
+
+        private static readonly TimeSpan CACHE_TTL_FAST = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan CACHE_TTL_NORMAL = TimeSpan.FromMinutes(3);
 
 
-            public AiQueryService(
+        public AiQueryService(
                 IBookRepository bookRepository,
                 IOpenAiService openAIService,
                 ILogger<AiQueryService> logger,
+                 ICacheService cacheService,
                 IUserService userService)
             {
                 _bookRepository = bookRepository;
                 _openAIService = openAIService;
                 _logger = logger;
-                _userService = userService;
+            _cacheService = cacheService;
+            _userService = userService;
             }
 
             public async Task<AiQueryResponseDTO> ProcessQueryAsync(string query, string userId, bool isAdmin)
             {
                 try
                 {
-                    var context = isAdmin
+
+                if (!await CanExecuteQueryAsync(userId))
+                {
+                    return new AiQueryResponseDTO
+                    {
+                        Success = false,
+                        ErrorMessage = "Rate limit exceeded. Try again later.",
+                        Answer = "You have reached the maximum number of queries allowed per minute."
+                    };
+                }
+
+                var cacheKey = $"aiquery:{userId}:{query}";
+                var cachedResult = await _cacheService.GetAsync<AiQueryResponseDTO>(cacheKey);
+                if (cachedResult != null)
+                {
+                    return cachedResult;
+                }
+
+
+
+                var context = isAdmin
                         ? "User is an admin and can query all books across all users."
                         : $"User can only query their own books (UserId: {userId}).";
 
@@ -56,7 +85,7 @@
                         }
                     }
 
-                    return new AiQueryResponseDTO
+                    var response =  new AiQueryResponseDTO
                     {
                         Success = true,
                         Answer = answer,
@@ -64,7 +93,19 @@
                         Data = result.Data,
                         ChartType = result.ChartType
                     };
-                }
+
+                var ttl = queryIntent.QueryType switch
+                {
+                    "USER_STATISTICS" => CACHE_TTL_FAST,
+                    "CURRENTLY_READING" => CACHE_TTL_FAST,
+                    _ => CACHE_TTL_NORMAL
+                };
+                await _cacheService.SetAsync(cacheKey, response, ttl);
+
+                return response;
+
+
+            }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error processing AI query: {Query}", query);
@@ -78,7 +119,14 @@
                 }
             }
 
-            private QueryIntent ParseAIResponse(string aiResponse)
+        private async Task<bool> CanExecuteQueryAsync(string userId)
+        {
+            var key = $"rate:{userId}";
+            var count = await _cacheService.IncrementAsync(key, RATE_LIMIT_WINDOW);
+            return count <= RATE_LIMIT_MAX_CALLS;
+        }
+
+        private QueryIntent ParseAIResponse(string aiResponse)
             {
                 try
                 {

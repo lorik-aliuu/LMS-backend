@@ -20,7 +20,8 @@ using FluentValidation.AspNetCore;
         using Microsoft.Extensions.DependencyInjection;
         using Microsoft.IdentityModel.Tokens;
         using Microsoft.OpenApi.Models;
-        using System.Diagnostics;
+using StackExchange.Redis;
+using System.Diagnostics;
         using System.Text;
 
 
@@ -48,6 +49,15 @@ using FluentValidation.AspNetCore;
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
         var jwtSettings = builder.Configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"];
+
+var redisConnectionString = builder.Configuration["Redis:ConnectionString"];
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var configuration = ConfigurationOptions.Parse(redisConnectionString);
+    configuration.AbortOnConnectFail = false; 
+    return ConnectionMultiplexer.Connect(configuration);
+});
 
 builder.Services.AddCors(options =>
 {
@@ -173,6 +183,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICacheService, RedisService>();
 
         builder.Services.AddScoped<IUserNotifierService, UserNotifierService>();
 

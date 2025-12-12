@@ -16,11 +16,13 @@ namespace LMS.Application.Services
     {
         private readonly IBookRepository _bookRepository;
         private readonly IMapper _mapper;
+        private readonly ICacheService _cacheService;
 
-        public BookService(IBookRepository bookRepository, IMapper mapper)
+        public BookService(IBookRepository bookRepository, IMapper mapper, ICacheService cacheService)
         {
             _bookRepository = bookRepository;
             _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         public async Task<BookDTO> CreateBookAsync(CreateBookDTO createBookDto, string userId)
@@ -31,6 +33,9 @@ namespace LMS.Application.Services
 
             await _bookRepository.AddAsync(book);
             await _bookRepository.SaveChangesAsync();
+
+
+            await InvalidateUserCache(userId);
 
             return _mapper.Map<BookDTO>(book);
         }
@@ -44,7 +49,7 @@ namespace LMS.Application.Services
                 throw new NotFoundException(nameof(Book), bookId);
             }
 
-            
+
             if (book.UserId != userId)
             {
                 throw new UnauthorizedException("You dont have permission to view this book");
@@ -83,8 +88,11 @@ namespace LMS.Application.Services
             await _bookRepository.UpdateAsync(book);
             await _bookRepository.SaveChangesAsync();
 
+            await InvalidateUserCache(userId);
+
+
             return _mapper.Map<BookDTO>(book);
-        
+
         }
 
         public async Task DeleteBookAsync(int bookId, string userId)
@@ -96,7 +104,7 @@ namespace LMS.Application.Services
                 throw new NotFoundException(nameof(Book), bookId);
             }
 
-           
+
             if (book.UserId != userId)
             {
                 throw new UnauthorizedException("You dont have permission to delete this book");
@@ -104,6 +112,8 @@ namespace LMS.Application.Services
 
             await _bookRepository.DeleteAsync(book);
             await _bookRepository.SaveChangesAsync();
+
+            await InvalidateUserCache(userId);
         }
 
         public async Task<IEnumerable<BookListDTO>> SearchUserBooksAsync(string userId, string search)
@@ -141,6 +151,11 @@ namespace LMS.Application.Services
 
             await _bookRepository.DeleteAsync(book);
             await _bookRepository.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(book.UserId))
+                await InvalidateUserCache(book.UserId);
+
+            await _cacheService.RemoveAsync("aiquery:admin:*");
         }
 
         public async Task<int> GetTotalBooksCountAsync()
@@ -154,5 +169,14 @@ namespace LMS.Application.Services
             return await _bookRepository.GetBookCountByUserAsync(userId);
         }
 
+        private async Task InvalidateUserCache(string userId)
+        {
+
+            await _cacheService.RemoveByPatternAsync($"aiquery:{userId}:*");
+
+
+            await _cacheService.RemoveByPatternAsync("aiquery:admin:*");
+
+        }
     }
 }
